@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>AlphaEarth Risk Intelligence by Spinosos</title>
+  <link rel="stylesheet" href="style1.css">
+</head>
+<body>
+  <header>
+    <h1>AlphaEarth Risk Intelligence by Spinosos</h1>
+    <div style="margin-left: auto;">
+  <label for="language-select" style="margin-right: 8px; color: white;" data-i18n="languageLabel">Idioma:</label>
+
+  <select id="language-select">
+    <option value="es">Español</option>
+    <option value="en">English</option>
+    <option value="fr">Français</option>
+  </select>
+</div>
+
+    <img src="Logo Spinosos.jpeg" width="150px" style="margin-left: 50px;">
+    
+  </header>
+
+  <main>
+    <section id="riskPanel">
+      <h2 data-i18n="riskPanelTitle">Evaluación de Riesgo</h2>
+
+      <div class="container">
+        <p data-i18n="introText">Introduce las coordenadas de una propiedad para analizar el daño satelital.</p>
+
+        <div class="controls">
+        <input type="text" id="lat-input" value="">
+        <input type="text" id="lon-input" value="">
+        <input type="text" id="date-input" value="">
+        <select id="type-input">
+            <option value="" data-i18n="disasterDefault"></option>
+            <option value="fire" data-i18n="disasterFire"></option>
+            <option value="flood" data-i18n="disasterFlood"></option>
+        </select>
+
+          <button id="analyze-button" data-i18n="analyzeButton">Analizar Daños</button>
+        </div>
+
+        <div id="results-container">
+          <h2 data-i18n="analysisTitle">Resultados del Análisis</h2>
+          <div id="status-message">Consultando imágenes...</div>
+
+         
+
+          <div id="risk-context-box" style="display:none; background-color:#fff8e1; padding:10px; border-radius:6px; margin-bottom:20px;">
+            <h3 data-i18n="contextTitle">Contexto de Riesgo Adicional</h3>
+            <p id="metric-risk-context" style="color:#6f4f00" data-i18n-dynamic="riskContext" >Análisis de riesgo de inundación no aplicable para este tipo de desastre.</p>
+          </div>
+
+          <div class="image-comparison">
+            <div class="image-box">
+              <h3 data-i18n="beforeTitle">Antes del Desastre</h3>
+              <img id="img-before" src="" alt="Imagen satelital antes del desastre" data-i18n-alt="beforeAlt">
+            </div>
+            <div class="image-box">
+              <h3 data-i18n="afterTitle">Después del Desastre</h3>
+              <img id="img-after" src="" alt="Imagen satelital después del desastre" data-i18n-alt="afterAlt">
+            </div>
+             <div class="image-box" id="damage-map-container">
+            <h3 data-i18n="mapTitle">Mapa de Daños (IA)</h3>
+            <img id="img-damage-map" src="" alt="Mapa de calor del daño detectado" data-i18n-alt="mapAlt" style="width: 100%; border: 1px solid #ddd;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="globePanel">
+  <h2 data-i18n="globeTitle">🌍 Globo Terrestre Interactivo</h2>
+
+  <div id="globe-container" style="width: 100%; height: 400px; border-radius: 10px; overflow: hidden; background: #000; position: relative;">
+    <div class="coordinates-display" style="position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; font-size: 1rem; z-index: 10;">
+      Coordenadas: <span id="coords">39.5075, -121.4635</span>
+    </div>
+    <div class="marker" id="marker" style="display: none;"></div>
+    <div class="globe-controls" style="position: absolute; bottom: 15px; right: 15px; display: flex; gap: 10px; z-index: 10;">
+      <button id="reset-view">⟳</button>
+      <button id="zoom-in">+</button>
+      <button id="zoom-out">-</button>
+    </div>
+  </div>
+</section>
+
+
+  </main>
+
+  <footer>
+    <p>© 2025 AlphaEarth Insurance Challenge</p>
+  </footer>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    document.getElementById('analyze-button').addEventListener('click', function () {
+      let lat = document.getElementById('lat-input').value.trim();
+      let lon = document.getElementById('lon-input').value.trim();
+      let date = document.getElementById('date-input').value.trim();
+      let type = document.getElementById('type-input').value.trim();
+      let resultsDiv = document.getElementById('results-container');
+      let statusMsg = document.getElementById('status-message');
+
+      if (!lat && !lon && !date && !type) {
+        statusMsg.innerText = "⚠️ Por favor, completa latitud, longitud, fecha y/o tipo de desastre.";
+        statusMsg.style.backgroundColor = '#fde2e2';
+        resultsDiv.style.display = 'block';
+        return;
+    } else{
+        if (!lat) {
+            statusMsg.innerText = "⚠️ Por favor, completa latitud.";
+            statusMsg.style.backgroundColor = '#fde2e2';
+            resultsDiv.style.display = 'block';
+            return;
+        }
+        if (!lon) {
+            statusMsg.innerText = "⚠️ Por favor, completa longitud.";
+            statusMsg.style.backgroundColor = '#fde2e2';
+            resultsDiv.style.display = 'block';
+            return;
+        }
+        if (!date) {
+            statusMsg.innerText = "⚠️ Por favor, completa fecha.";
+            statusMsg.style.backgroundColor = '#fde2e2';
+            resultsDiv.style.display = 'block';
+            return;
+        }
+        if (!type) {
+            statusMsg.innerText = "⚠️ Por favor, completa tipo de desastre.";
+            statusMsg.style.backgroundColor = '#fde2e2';
+            resultsDiv.style.display = 'block';
+            return;
+        }
+    }
+
+      resultsDiv.style.display = 'block';
+      statusMsg.innerText = 'Procesando en Google Earth Engine... Esto puede tardar unos segundos...';
+      statusMsg.style.backgroundColor = '#fef0c3';
+
+      fetch('https://helaine-peritonital-beverly.ngrok-free.dev/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lat: lat,
+          lon: lon,
+          disaster_date: date,
+          disaster_type: type
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Respuesta del backend:', data);
+
+        if (data.error) {
+          statusMsg.innerText = `Error: ${data.error}`;
+          statusMsg.style.backgroundColor = '#fde2e2';
+          document.getElementById('risk-context-box').style.display = 'none';
+          document.getElementById('damage-map-container').style.display = 'none';
+        } else {
+          // --- ¡ÉXITO! MOSTRAR TODO ---
+          statusMsg.innerText = `✅ Estado: ${data.status} | Daño Detectado: ${data.damage_percent}%`;
+          statusMsg.style.backgroundColor = '#c8e6c9';
+
+          document.getElementById('img-before').src = data.image_url_before;
+          document.getElementById('img-after').src = data.image_url_after;
+
+          document.getElementById('img-damage-map').src = data.image_url_damage_map;
+          document.getElementById('damage-map-container').style.display = 'block';
+
+          document.getElementById('metric-risk-context').innerText = data.risk_context;
+          document.getElementById('risk-context-box').style.display = 'block';
+        }
+      })
+      .catch(error => {
+        console.error('Error en fetch:', error);
+        statusMsg.innerText = 'Error: No se pudo conectar al servidor. ¿Está "python app.py" corriendo?';
+        statusMsg.style.backgroundColor = '#fde2e2';
+      });
+    });
+    
+  </script>
+  <script>
+let scene, camera, renderer, earth, marker, raycaster, mouse;
+let markerVisible = false;
+let currentCoords = { lat: 39.5075, lon: -121.4635 };
+
+function initGlobe() {
+  scene = new THREE.Scene();
+  const container = document.getElementById('globe-container');
+  camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+  camera.position.z = 2.5;
+
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  container.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(5, 3, 5);
+  scene.add(dirLight);
+
+  const earthGeometry = new THREE.SphereGeometry(1, 64, 64);
+  const earthMaterial = new THREE.MeshPhongMaterial({
+    map: new THREE.TextureLoader().load('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg'),
+    bumpMap: new THREE.TextureLoader().load('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png'),
+    bumpScale: 0.04,
+    specularMap: new THREE.TextureLoader().load('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-water.png'),
+    specular: new THREE.Color(0x333333),
+    shininess: 5
+  });
+  earth = new THREE.Mesh(earthGeometry, earthMaterial);
+  scene.add(earth);
+
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
+
+  renderer.domElement.addEventListener('click', onGlobeClick);
+  document.getElementById('reset-view').onclick = () => camera.position.set(0, 0, 2.5);
+  document.getElementById('zoom-in').onclick = () => camera.position.z = Math.max(1.0, camera.position.z - 0.2);
+  document.getElementById('zoom-out').onclick = () => camera.position.z = Math.min(5.0, camera.position.z + 0.2);
+
+  animate();
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  earth.rotation.y += 0.0005;
+  renderer.render(scene, camera);
+}
+
+function onGlobeClick(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObject(earth);
+  if (intersects.length > 0) {
+    const point = intersects[0].point;
+    const lat = 90 - (Math.acos(point.y / point.length()) * 180 / Math.PI);
+    const lon = ((270 + (Math.atan2(point.x, point.z)) * 180 / Math.PI) % 360) - 180;
+    currentCoords.lat = parseFloat(lat.toFixed(4));
+    currentCoords.lon = parseFloat(lon.toFixed(4));
+    document.getElementById('coords').textContent = `${currentCoords.lat}, ${currentCoords.lon}`;
+    document.getElementById('lat-input').value = currentCoords.lat;
+    document.getElementById('lon-input').value = currentCoords.lon;
+    document.getElementById('marker').style.display = 'block';
+  }
+}
+
+window.addEventListener('load', initGlobe);
+</script>
+<script>
+const translations = {
+    es: {
+    riskPanelTitle: "Evaluación de Riesgo",
+    introText: "Introduce las coordenadas de una propiedad para analizar el daño satelital.",
+    analyzeButton: "Analizar Daños",
+    statusLoading: "Procesando en Google Earth Engine... Esto puede tardar unos segundos...",
+    statusError: "Error: Por favor, completa latitud, longitud, fecha y/o tipo de desastre.",
+    contextTitle: "Contexto de Riesgo Adicional",
+    beforeImage: "Antes del Desastre",
+    afterImage: "Después del Desastre",
+    damageMap: "Mapa de Daños (IA)",
+    latPlaceholder: "Latitud",
+    lonPlaceholder: "Longitud",
+    datePlaceholder: "Fecha (YYYY-MM-DD)",
+    disasterDefault: "Tipo de Desastre",
+    disasterFire: "Incendio",
+    disasterFlood: "Inundación",
+    globeTitle: "🌍 Globo Terrestre Interactivo",
+    languageLabel: "Idioma:",
+    analysisTitle: "Resultados del Análisis",
+    contextTitle: "Contexto de Riesgo Adicional",
+    riskContext: "Análisis de riesgo de inundación no aplicable para este tipo de desastre.",
+    beforeTitle: "Antes del Desastre",
+    beforeAlt: "Imagen satelital antes del desastre",
+    afterTitle: "Después del Desastre",
+    afterAlt: "Imagen satelital después del desastre",
+    mapTitle: "Mapa de Daños (IA)",
+    mapAlt: "Mapa de calor del daño detectado"
+  },
+  en: {
+    riskPanelTitle: "Risk Assessment",
+    introText: "Enter property coordinates to analyze satellite damage.",
+    analyzeButton: "Analyze Damage",
+    statusLoading: "Processing in Google Earth Engine... This may take a few seconds...",
+    statusError: "Error: Please complete latitude, longitude, date, and disaster type.",
+    contextTitle: "Additional Risk Context",
+    beforeImage: "Before Disaster",
+    afterImage: "After Disaster",
+    damageMap: "Damage Map (AI)",
+    latPlaceholder: "Latitude",
+    lonPlaceholder: "Longitude",
+    datePlaceholder: "Date (YYYY-MM-DD)",
+    disasterDefault: "Select Disaster Type",
+    disasterFire: "Wildfire",
+    disasterFlood: "Flood",
+    globeTitle: "🌍 Interactive Earth Globe",
+    languageLabel: "Language:",
+    analysisTitle: "Analysis Results",
+    contextTitle: "Additional Risk Context",
+    riskContext: "Flood risk analysis not applicable for this type of disaster.",
+    beforeTitle: "Before Disaster",
+    beforeAlt: "Satellite image before disaster",
+    afterTitle: "After Disaster",
+    afterAlt: "Satellite image after disaster",
+    mapTitle: "Damage Map (AI)",
+    mapAlt: "AI-generated damage heatmap"
+  },
+  fr: {
+    riskPanelTitle: "Évaluation des Risques",
+    introText: "Entrez les coordonnées de la propriété pour analyser les dommages satellitaires.",
+    analyzeButton: "Analyser les Dommages",
+    statusLoading: "Traitement via Google Earth Engine... Cela peut prendre quelques secondes...",
+    statusError: "Erreur : Veuillez compléter la latitude, la longitude, la date et le type de catastrophe.",
+    contextTitle: "Contexte de Risque Supplémentaire",
+    beforeImage: "Avant la Catastrophe",
+    afterImage: "Après la Catastrophe",
+    damageMap: "Carte des Dommages (IA)",
+    latPlaceholder: "Latitude",
+    lonPlaceholder: "Longitude",
+    datePlaceholder: "Date (AAAA-MM-JJ)",
+    disasterDefault: "Type de Catastrophe",
+    disasterFire: "Feu de forêt",
+    disasterFlood: "Inondation",
+    globeTitle: "🌍 Globe Terrestre Interactif",
+    languageLabel: "Langue:",
+    analysisTitle: "Résultats de l'Analyse",
+    contextTitle: "Contexte de Risque Supplémentaire",
+    riskContext: "L'analyse du risque d'inondation n'est pas applicable à ce type de catastrophe.",
+    beforeTitle: "Avant la Catastrophe",
+    beforeAlt: "Image satellite avant la catastrophe",
+    afterTitle: "Après la Catastrophe",
+    afterAlt: "Image satellite après la catastrophe",
+    mapTitle: "Carte des Dommages (IA)",
+    mapAlt: "Carte thermique des dommages générée par IA"
+  },
+ 
+   
+};
+
+
+document.getElementById('language-select').addEventListener('change', function() {
+  const lang = this.value;
+
+  // Traducción de textos visibles
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (translations[lang] && translations[lang][key]) {
+      el.textContent = translations[lang][key];
+    }
+  });
+
+  // Traducción de placeholders
+  document.getElementById('lat-input').placeholder = translations[lang].latPlaceholder;
+  document.getElementById('lon-input').placeholder = translations[lang].lonPlaceholder;
+  document.getElementById('date-input').placeholder = translations[lang].datePlaceholder;
+
+  // Traducción de opciones del select
+  document.querySelectorAll('#type-input option').forEach(opt => {
+    const key = opt.getAttribute('data-i18n');
+    if (translations[lang] && translations[lang][key]) {
+      opt.textContent = translations[lang][key];
+    }
+  });
+});
+document.querySelectorAll('[data-i18n]').forEach(el => {
+  const key = el.getAttribute('data-i18n');
+  if (translations[lang] && translations[lang][key]) {
+    el.textContent = translations[lang][key];
+  }
+});
+
+document.querySelectorAll('[data-i18n-alt]').forEach(img => {
+  const key = img.getAttribute('data-i18n-alt');
+  if (translations[lang] && translations[lang][key]) {
+    img.alt = translations[lang][key];
+  }
+});
+
+const dynamicText = document.querySelector('[data-i18n-dynamic="riskContext"]');
+if (dynamicText && translations[lang] && translations[lang].riskContext) {
+  dynamicText.textContent = translations[lang].riskContext;
+}
+
+
+</script>
+
+
+</body>
+</html>
